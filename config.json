@@ -1,0 +1,284 @@
+{
+  "networks": {
+    "polygon": {
+      "name": "Polygon",
+      "rpc_url": "https://polygon-rpc.com",
+      "backup_rpc_urls": [
+        "https://rpc-mainnet.matic.network",
+        "https://polygon-mainnet.infura.io/v3/YOUR_INFURA_KEY"
+      ],
+      "chain_id": 137,
+      "currency": "MATIC",
+      "block_time": 2,
+      "confirmation_blocks": 5,
+      "gas_limit": 6000000,
+      "max_gas_price_gwei": 100,
+      "contracts": {
+        "cqt": "0x94ef57abfbff1ad70bd00a921e1d2437f31c1665",
+        "weth": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+        "wmatic": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+        "uniswap_v3_router": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+        "uniswap_v3_factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984"
+      }
+    },
+    "base": {
+      "name": "Base",
+      "rpc_url": "https://mainnet.base.org",
+      "backup_rpc_urls": [
+        "https://base-mainnet.infura.io/v3/YOUR_INFURA_KEY",
+        "https://base.llamarpc.com"
+      ],
+      "chain_id": 8453,
+      "currency": "ETH",
+      "block_time": 2,
+      "confirmation_blocks": 3,
+      "gas_limit": 5000000,
+      "max_gas_price_gwei": 20,
+      "contracts": {
+        "cqt": "0x9d1075b41cd80ab08179f36bc17a7ff8708748ba",
+        "weth": "0x4200000000000000000000000000000000000006"
+      }
+    }
+  },
+  "pools": [
+    {
+      "id": "polygon_cqt_weth",
+      "address": "0xb1e0b26c31a2e8c3eeBd6d5ff0E386A9c073d24F",
+      "network": "polygon",
+      "dex": "uniswap_v3",
+      "token0": "CQT",
+      "token1": "WETH",
+      "token0_address": "0x94ef57abfbff1ad70bd00a921e1d2437f31c1665",
+      "token1_address": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+      "fee_tier": 3000,
+      "expected_price_range": {
+        "min": 10.60980,
+        "max": 10.73790
+      },
+      "liquidity_threshold": 1000000,
+      "enabled": true
+    },
+    {
+      "id": "polygon_cqt_wmatic",
+      "address": "0x0b3cd8a65c5C3C4D6b5a7e8b2f8d9E9c2B8A5D3F",
+      "network": "polygon",
+      "dex": "uniswap_v3",
+      "token0": "CQT",
+      "token1": "WMATIC",
+      "token0_address": "0x94ef57abfbff1ad70bd00a921e1d2437f31c1665",
+      "token1_address": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+      "fee_tier": 3000,
+      "expected_price_range": {
+        "min": 1.53109,
+        "max": 2.05436
+      },
+      "liquidity_threshold": 500000,
+      "enabled": true
+    }
+  ],
+  "arbitrage": {
+    "enabled": true,
+    "min_profit_threshold": 0.005,
+    "max_position_size": 1000000,
+    "min_position_size": 1000,
+    "max_slippage": 0.02,
+    "monitoring_interval": 30,
+    "execution_delay": 5,
+    "cooldown_period": 60,
+    "risk_tolerance": 0.02,
+    "gas_limit_multiplier": 1.2,
+    "max_concurrent_arbitrages": 3,
+    "profit_distribution": {
+      "reinvest_percentage": 80,
+      "reserve_percentage": 20
+    }
+  },
+  "cross_chain": {
+    "enabled": true,
+    "bridge_provider": "agglayer",
+    "bridge_contracts": {
+      "polygon": "0x0000000000000000000000000000000000000001",
+      "base": "0x0000000000000000000000000000000000000001"
+    },
+    "bridge_fees": {
+      "flat_fee_usd": 5.0,
+      "percentage_fee": 0.001
+    },
+    "confirmation_timeout": 600,
+    "max_bridge_amount": 10000000
+  },
+  "erc4337": {
+    "enabled": true,
+    "entry_point": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
+    "paymaster": {
+      "enabled": true,
+      "address": "0x0000000000000000000000000000000000000000",
+      "gas_sponsorship": true
+    },
+    "bundler": {
+      "url": "https://api.stackup.sh/v1/bundler",
+      "api_key_env": "BUNDLER_API_KEY"
+    }
+  },
+  "ml": {
+    "enabled": true,
+    "model_path": "models/lstm_model.h5",
+    "model_type": "lstm",
+    "features": ["price", "liquidity", "volume", "volatility"],
+    "sequence_length": 60,
+    "prediction_horizon": 5,
+    "retrain_interval": 3600,
+    "prediction_confidence_threshold": 0.7,
+    "data_sources": ["pools", "external_apis"],
+    "training": {
+      "batch_size": 32,
+      "epochs": 100,
+      "validation_split": 0.2,
+      "early_stopping_patience": 15
+    }
+  },
+  "zk_proofs": {
+    "enabled": true,
+    "proof_type": "agglayer_pessimistic",
+    "verification_timeout": 300,
+    "proof_validity_period": 300
+  },
+  "post_quantum": {
+    "enabled": true,
+    "algorithm": "dilithium",
+    "key_size": 2048,
+    "signature_validity_period": 600
+  },
+  "agent_kit": {
+    "enabled": true,
+    "project_id": "eb262ee5-9b74-4fa6-8891-0ae680cfea10",
+    "api_base_url": "https://api.cdp.coinbase.com",
+    "features": {
+      "market_analysis": true,
+      "trading_decisions": true,
+      "risk_management": true,
+      "automated_execution": false
+    },
+    "decision_thresholds": {
+      "min_confidence": 0.8,
+      "max_risk_score": 0.3
+    }
+  },
+  "web": {
+    "enabled": true,
+    "host": "0.0.0.0",
+    "port": 5000,
+    "debug": false,
+    "cors_enabled": true,
+    "auth": {
+      "enabled": false,
+      "type": "basic",
+      "users": {}
+    },
+    "websocket": {
+      "enabled": true,
+      "update_interval": 5
+    },
+    "api": {
+      "rate_limit": {
+        "requests_per_minute": 60,
+        "burst_size": 10
+      }
+    }
+  },
+  "database": {
+    "type": "redis",
+    "redis": {
+      "host": "localhost",
+      "port": 6379,
+      "db": 0,
+      "password": null,
+      "ssl": false,
+      "connection_pool_size": 10
+    },
+    "data_retention": {
+      "price_data_days": 30,
+      "transaction_data_days": 90,
+      "log_data_days": 7
+    }
+  },
+  "external_apis": {
+    "the_graph": {
+      "enabled": true,
+      "endpoints": {
+        "polygon": "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3-polygon",
+        "base": "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3-base"
+      },
+      "rate_limit": 100
+    },
+    "coingecko": {
+      "enabled": true,
+      "api_key_env": "COINGECKO_API_KEY",
+      "base_url": "https://api.coingecko.com/api/v3",
+      "rate_limit": 50
+    },
+    "dexscreener": {
+      "enabled": true,
+      "base_url": "https://api.dexscreener.com",
+      "rate_limit": 60
+    }
+  },
+  "security": {
+    "private_key_env": "PRIVATE_KEY",
+    "wallet_address": "0xCc380FD8bfbdF0c020de64075b86C84c2BB0AE79",
+    "max_daily_loss": 1000,
+    "emergency_stop_conditions": {
+      "max_consecutive_failures": 5,
+      "max_gas_price_gwei": 200,
+      "min_account_balance_eth": 0.01
+    },
+    "audit": {
+      "log_all_transactions": true,
+      "log_all_decisions": true,
+      "alert_on_large_trades": true
+    }
+  },
+  "notifications": {
+    "enabled": true,
+    "channels": {
+      "console": true,
+      "file": true,
+      "webhook": false
+    },
+    "webhook": {
+      "url": "",
+      "auth_header": ""
+    },
+    "events": {
+      "arbitrage_success": true,
+      "arbitrage_failure": true,
+      "large_opportunity": true,
+      "system_error": true,
+      "low_balance": true
+    }
+  },
+  "performance": {
+    "metrics_collection": true,
+    "profiling_enabled": false,
+    "memory_limit_mb": 2048,
+    "cpu_limit_percentage": 80,
+    "optimization": {
+      "parallel_pool_monitoring": true,
+      "batch_transaction_processing": true,
+      "connection_pooling": true
+    }
+  },
+  "deployment": {
+    "environment": "production",
+    "version": "1.0.0",
+    "deploy_timestamp": "2025-06-29T00:00:00Z",
+    "deployer_address": "0xCc380FD8bfbdF0c020de64075b86C84c2BB0AE79",
+    "target_wallet": "0xF60d96CFA71c6fe7FE18cA028041CA7f42b543bd",
+    "liquidity_allocation": {
+      "total_cqt": "39230000000000000000000000000000",
+      "polygon_allocation": "15000000000000000000000000000000",
+      "base_allocation": "15000000000000000000000000000000",
+      "reserve_allocation": "9230000000000000000000000000000"
+    }
+  }
+}

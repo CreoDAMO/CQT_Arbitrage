@@ -1,0 +1,59 @@
+[profile.default]
+src = "contracts"
+out = "out"
+libs = ["lib"]
+cache_path = "cache_forge"
+
+# Optimizer settings
+optimizer = true
+optimizer_runs = 200
+
+# EVM version
+evm_version = "shanghai"
+
+# Gas settings
+gas_limit = 9223372036854775807
+gas_price = 20000000000
+
+# Test settings
+verbosity = 2
+fuzz_runs = 1000
+
+# RPC settings
+[rpc_endpoints]
+polygon = "${POLYGON_RPC_URL}"
+base = "${BASE_RPC_URL}"
+localhost = "http://127.0.0.1:8545"
+
+# Etherscan settings
+[etherscan]
+polygon = { key = "${POLYGONSCAN_API_KEY}", url = "https://api.polygonscan.com/api" }
+base = { key = "${BASESCAN_API_KEY}", url = "https://api.basescan.org/api" }
+
+# Formatting
+line_length = 120
+tab_width = 4
+bracket_spacing = true
+
+# Solc settings
+[profile.default.solc]
+version = "0.8.20"
+via_ir = true
+
+# Dependencies
+[dependencies]
+forge-std = { git = "https://github.com/foundry-rs/forge-std", tag = "v1.7.1" }
+openzeppelin = { git = "https://github.com/OpenZeppelin/openzeppelin-contracts", tag = "v4.9.3" }
+
+# Test profiles
+[profile.test]
+src = "test"
+test = "test"
+script = "scripts"
+
+[profile.coverage]
+via_ir = false
+
+# Gas reporting
+[profile.gas-report]
+gas_reports = ["*"]

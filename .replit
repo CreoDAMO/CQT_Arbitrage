@@ -1,0 +1,38 @@
+modules = ["nodejs-20", "python-3.11"]
+
+[nix]
+channel = "stable-24_05"
+packages = ["glibcLocales"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "CQT Arbitrage Bot"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "CQT Test"
+
+[[workflows.workflow]]
+name = "CQT Arbitrage Bot"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install web3 tensorflow redis requests aiohttp uvicorn fastapi websockets numpy pandas scikit-learn joblib eth-account && python main.py"
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "CQT Test"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py --test-only"
