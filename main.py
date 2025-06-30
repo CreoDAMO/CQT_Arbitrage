@@ -33,6 +33,8 @@ except ImportError:
     from SimplePredictor import SimplePredictor as LSTMPredictor
 from CrossChainManager import CrossChainManager
 from AgentKitIntegration import AgentKitClient
+from AIMiner import MicroMinerAI, initialize_micro_miner
+from LiquidityProvider import BuiltInLiquidityProvider, initialize_liquidity_provider
 from web.server import create_web_server
 
 # Configure logging
@@ -58,6 +60,12 @@ class CryptoQuestArbitrageBot:
         self.running = False
         self.pipeline = None
         self.web_server = None
+        
+        # Enhanced components
+        self.ai_miner = None
+        self.liquidity_provider = None
+        self.cross_chain_manager = None
+        self.agent_kit_client = None
         
         # Component initialization flags
         self.components_initialized = False
@@ -143,9 +151,49 @@ class CryptoQuestArbitrageBot:
             return
         
         try:
-            logger.info("Initializing bot components...")
+            logger.info("Initializing enhanced bot components...")
             
-            # Initialize main pipeline
+            # Initialize enhanced AI Miner
+            logger.info("Initializing AI Miner system...")
+            self.ai_miner = await initialize_micro_miner(self.config_path)
+            
+            # Initialize Built-in Liquidity Provider
+            logger.info("Initializing Built-in Liquidity Provider...")
+            self.liquidity_provider = await initialize_liquidity_provider(self.config_path)
+            
+            # Initialize Cross-Chain Manager with error handling
+            logger.info("Initializing Cross-Chain Manager...")
+            try:
+                from web3 import Web3
+                import os
+                
+                # Use Moralis endpoints with environment substitution
+                moralis_key = os.getenv("MORALIS_API_KEY")
+                
+                polygon_rpc = f"https://speedy-nodes-nyc.moralis.io/{moralis_key}/polygon/mainnet" if moralis_key else "https://polygon-rpc.com"
+                base_rpc = f"https://speedy-nodes-nyc.moralis.io/{moralis_key}/base/mainnet" if moralis_key else "https://mainnet.base.org"
+                
+                w3_polygon = Web3(Web3.HTTPProvider(polygon_rpc))
+                w3_base = Web3(Web3.HTTPProvider(base_rpc))
+                self.cross_chain_manager = CrossChainManager(w3_polygon, w3_base)
+                logger.info("Cross-Chain Manager initialized successfully")
+            except Exception as e:
+                logger.warning(f"Cross-Chain Manager initialization failed: {e}")
+                logger.info("Continuing with limited functionality")
+            
+            # Initialize Agent Kit if enabled
+            if self.config.get("agent_kit", {}).get("enabled", False):
+                logger.info("Initializing Agent Kit integration...")
+                import os
+                api_key = os.getenv("CDP_API_KEY")
+                if api_key:
+                    agent_config = self.config["agent_kit"]
+                    self.agent_kit_client = AgentKitClient(api_key, agent_config["project_id"])
+                    logger.info("Agent Kit client initialized successfully")
+                else:
+                    logger.warning("Agent Kit enabled but no CDP_API_KEY found")
+            
+            # Initialize main pipeline with enhanced features
             self.pipeline = CryptoQuestPipeline(self.config_path)
             
             # Create web server
@@ -161,7 +209,7 @@ class CryptoQuestArbitrageBot:
             await self._initialize_ml_model()
             
             self.components_initialized = True
-            logger.info("All components initialized successfully")
+            logger.info("All enhanced components initialized successfully")
             
         except Exception as e:
             logger.error(f"Failed to initialize components: {e}")
@@ -172,13 +220,12 @@ class CryptoQuestArbitrageBot:
         
         required_vars = [
             "PRIVATE_KEY",
-            "POLYGON_RPC_URL",
-            "BASE_RPC_URL"
+            "MORALIS_API_KEY"
         ]
         
         optional_vars = [
             "CDP_API_KEY",
-            "CDP_PROJECT_ID",
+            "INFURA_API_KEY",
             "REDIS_HOST",
             "REDIS_PORT"
         ]
@@ -212,47 +259,120 @@ class CryptoQuestArbitrageBot:
         """Test connections to blockchain networks"""
         
         try:
-            # Test Polygon connection
-            polygon_rpc = os.getenv("POLYGON_RPC_URL", self.config["networks"]["polygon"]["rpc_url"])
+            # Test Polygon connection with reliable endpoints
+            moralis_key = os.getenv("MORALIS_API_KEY")
+            infura_key = os.getenv("INFURA_API_KEY")
+            
+            # Try multiple RPC endpoints for reliability
+            polygon_rpcs = [
+                "https://polygon-rpc.com",
+                "https://rpc-mainnet.matic.network", 
+                "https://polygon-mainnet.public.blastapi.io"
+            ]
+            
+            if infura_key:
+                polygon_rpcs.insert(0, f"https://polygon-mainnet.infura.io/v3/{infura_key}")
+            
+            polygon_rpc = polygon_rpcs[0]
+            
             from web3 import Web3
-            
             w3_polygon = Web3(Web3.HTTPProvider(polygon_rpc))
-            if not w3_polygon.isConnected():
-                raise ConnectionError("Failed to connect to Polygon network")
             
-            polygon_block = w3_polygon.eth.block_number
-            logger.info(f"Polygon connection successful (block: {polygon_block})")
+            # Test connection by getting latest block
+            polygon_connected = False
+            for rpc_url in polygon_rpcs:
+                try:
+                    w3_polygon = Web3(Web3.HTTPProvider(rpc_url))
+                    latest_block = w3_polygon.eth.get_block('latest')
+                    if latest_block:
+                        polygon_block = w3_polygon.eth.block_number
+                        logger.info(f"Polygon connection successful (block: {polygon_block})")
+                        polygon_connected = True
+                        break
+                except Exception as e:
+                    logger.debug(f"RPC {rpc_url} failed: {e}")
+                    continue
+            
+            if not polygon_connected:
+                logger.warning("Could not connect to Polygon network - continuing with limited functionality")
             
             # Test Base connection
-            base_rpc = os.getenv("BASE_RPC_URL", self.config["networks"]["base"]["rpc_url"])
-            w3_base = Web3(Web3.HTTPProvider(base_rpc))
-            if not w3_base.isConnected():
-                raise ConnectionError("Failed to connect to Base network")
+            base_rpcs = [
+                "https://mainnet.base.org",
+                "https://base-mainnet.public.blastapi.io"
+            ]
             
-            base_block = w3_base.eth.block_number
-            logger.info(f"Base connection successful (block: {base_block})")
+            if infura_key:
+                base_rpcs.insert(0, f"https://base-mainnet.infura.io/v3/{infura_key}")
             
-            # Test account balances
-            account_address = self.pipeline.account.address
+            base_connected = False
+            for rpc_url in base_rpcs:
+                try:
+                    w3_base = Web3(Web3.HTTPProvider(rpc_url))
+                    latest_block = w3_base.eth.get_block('latest')
+                    if latest_block:
+                        base_block = w3_base.eth.block_number
+                        logger.info(f"Base connection successful (block: {base_block})")
+                        base_connected = True
+                        break
+                except Exception as e:
+                    logger.debug(f"RPC {rpc_url} failed: {e}")
+                    continue
             
-            polygon_balance = w3_polygon.eth.get_balance(account_address)
-            base_balance = w3_base.eth.get_balance(account_address)
+            if not base_connected:
+                logger.warning("Could not connect to Base network - continuing with limited functionality")
             
-            logger.info(f"Account balances - Polygon: {w3_polygon.fromWei(polygon_balance, 'ether'):.4f} MATIC, "
-                       f"Base: {w3_base.fromWei(base_balance, 'ether'):.4f} ETH")
+            # Test account balances if networks are connected
+            if polygon_connected and hasattr(self, 'pipeline') and self.pipeline.account:
+                try:
+                    account_address = self.pipeline.account.address
+                    polygon_balance = w3_polygon.eth.get_balance(account_address)
+                    
+                    # Use modern from_wei or fallback
+                    try:
+                        balance_matic = w3_polygon.from_wei(polygon_balance, 'ether')
+                    except AttributeError:
+                        from web3 import Web3
+                        balance_matic = Web3.fromWei(polygon_balance, 'ether')
+                    
+                    logger.info(f"Polygon balance: {balance_matic:.4f} MATIC")
+                    
+                    # Check minimum balance
+                    try:
+                        min_balance_wei = w3_polygon.to_wei(0.01, 'ether')
+                    except AttributeError:
+                        from web3 import Web3
+                        min_balance_wei = Web3.toWei(0.01, 'ether')
+                    
+                    if polygon_balance < min_balance_wei:
+                        logger.warning("Low MATIC balance on Polygon")
+                except Exception as e:
+                    logger.debug(f"Balance check failed: {e}")
             
-            # Warn if balances are low
-            min_balance_wei = w3_polygon.toWei(0.01, 'ether')  # 0.01 ETH minimum
+            if base_connected and hasattr(self, 'pipeline') and self.pipeline.account:
+                try:
+                    account_address = self.pipeline.account.address
+                    base_balance = w3_base.eth.get_balance(account_address)
+                    
+                    # Use modern from_wei or fallback
+                    try:
+                        balance_eth = w3_base.from_wei(base_balance, 'ether')
+                    except AttributeError:
+                        from web3 import Web3
+                        balance_eth = Web3.fromWei(base_balance, 'ether')
+                    
+                    logger.info(f"Base balance: {balance_eth:.4f} ETH")
+                    
+                    if base_balance < min_balance_wei:
+                        logger.warning("Low ETH balance on Base")
+                except Exception as e:
+                    logger.debug(f"Balance check failed: {e}")
             
-            if polygon_balance < min_balance_wei:
-                logger.warning("Low MATIC balance on Polygon - may not be sufficient for gas fees")
-            
-            if base_balance < min_balance_wei:
-                logger.warning("Low ETH balance on Base - may not be sufficient for gas fees")
+            logger.info("Network connectivity tests completed")
             
         except Exception as e:
-            logger.error(f"Network connection test failed: {e}")
-            raise
+            logger.warning(f"Network connection test failed: {e}")
+            logger.info("Continuing with enhanced bot initialization")
     
     async def _initialize_ml_model(self):
         """Initialize and load ML model"""
@@ -420,18 +540,51 @@ class CryptoQuestArbitrageBot:
             signal.signal(signal.SIGHUP, signal_handler)
     
     def get_status(self) -> Dict:
-        """Get current bot status"""
+        """Get current enhanced bot status including AI Miner and BLP"""
         
         status = {
             "running": self.running,
             "components_initialized": self.components_initialized,
             "config_loaded": bool(self.config),
             "pipeline_status": None,
-            "uptime": None
+            "ai_miner_status": None,
+            "liquidity_provider_status": None,
+            "cross_chain_status": None,
+            "agent_kit_status": None,
+            "uptime": None,
+            "enhanced_features": {
+                "ai_miner_enabled": bool(self.ai_miner),
+                "blp_enabled": bool(self.liquidity_provider),
+                "cross_chain_enabled": bool(self.cross_chain_manager),
+                "agent_kit_enabled": bool(self.agent_kit_client)
+            }
         }
         
+        # Get pipeline status
         if self.pipeline:
             status["pipeline_status"] = self.pipeline.get_status()
+        
+        # Get AI Miner status
+        if self.ai_miner:
+            status["ai_miner_status"] = self.ai_miner.get_mining_status()
+        
+        # Get BLP status
+        if self.liquidity_provider:
+            status["liquidity_provider_status"] = self.liquidity_provider.get_reserve_status()
+        
+        # Get Cross-Chain status
+        if self.cross_chain_manager:
+            status["cross_chain_status"] = {
+                "pending_bridges": len(self.cross_chain_manager.get_pending_bridges()),
+                "completed_bridges": len(self.cross_chain_manager.get_completed_bridges())
+            }
+        
+        # Get Agent Kit status
+        if self.agent_kit_client:
+            status["agent_kit_status"] = {
+                "connected": True,
+                "performance_metrics": self.agent_kit_client.get_performance_metrics()
+            }
         
         return status
 

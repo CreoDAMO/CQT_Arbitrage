@@ -2,10 +2,10 @@
   "networks": {
     "polygon": {
       "name": "Polygon",
-      "rpc_url": "https://polygon-rpc.com",
+      "rpc_url": "https://speedy-nodes-nyc.moralis.io/${MORALIS_API_KEY}/polygon/mainnet",
       "backup_rpc_urls": [
-        "https://rpc-mainnet.matic.network",
-        "https://polygon-mainnet.infura.io/v3/YOUR_INFURA_KEY"
+        "https://polygon-rpc.com",
+        "https://polygon-mainnet.infura.io/v3/${INFURA_API_KEY}"
       ],
       "chain_id": 137,
       "currency": "MATIC",
@@ -23,10 +23,10 @@
     },
     "base": {
       "name": "Base",
-      "rpc_url": "https://mainnet.base.org",
+      "rpc_url": "https://speedy-nodes-nyc.moralis.io/${MORALIS_API_KEY}/base/mainnet",
       "backup_rpc_urls": [
-        "https://base-mainnet.infura.io/v3/YOUR_INFURA_KEY",
-        "https://base.llamarpc.com"
+        "https://mainnet.base.org",
+        "https://base-mainnet.infura.io/v3/${INFURA_API_KEY}"
       ],
       "chain_id": 8453,
       "currency": "ETH",
@@ -163,6 +163,41 @@
       "min_confidence": 0.8,
       "max_risk_score": 0.3
     }
+  },
+  "ai_miner": {
+    "enabled": true,
+    "networks": ["ethereum", "polygon"],
+    "staking_config": {
+      "ethereum": {
+        "min_stake_amount": 0.01,
+        "expected_apy": 0.04,
+        "staking_contract": "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+      },
+      "polygon": {
+        "min_stake_amount": 10.0,
+        "expected_apy": 0.08,
+        "staking_contract": "0x5e3Ef299fDDf15eAa0432E6e66473ace8c13D908"
+      }
+    },
+    "optimization": {
+      "cycle_interval": 1800,
+      "min_reward_threshold": 0.0001,
+      "max_risk_score": 0.01
+    }
+  },
+  "built_in_liquidity_provider": {
+    "enabled": true,
+    "profit_allocation_percentage": 20,
+    "injection_thresholds": {
+      "min_reserve_balance": 1000,
+      "min_injection_interval": 3600
+    },
+    "pool_priorities": {
+      "polygon_cqt_weth": 1.5,
+      "polygon_cqt_wmatic": 1.3,
+      "base_cqt_usdc": 1.0
+    },
+    "auto_injection": true
   },
   "web": {
     "enabled": true,

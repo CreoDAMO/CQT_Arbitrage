@@ -36,3 +36,7 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py --test-only"
+
+[[ports]]
+localPort = 5000
+externalPort = 80

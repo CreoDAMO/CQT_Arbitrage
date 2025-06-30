@@ -171,12 +171,12 @@ class CryptoQuestPipeline:
         
         # Initialize contract instances
         self.cqt_polygon = self.w3_polygon.eth.contract(
-            address=Web3.toChecksumAddress("0x94ef57abfbff1ad70bd00a921e1d2437f31c1665"),
+            address=Web3.to_checksum_address("0x94ef57abfbff1ad70bd00a921e1d2437f31c1665"),
             abi=erc20_abi
         )
         
         self.cqt_base = self.w3_base.eth.contract(
-            address=Web3.toChecksumAddress("0x9d1075b41cd80ab08179f36bc17a7ff8708748ba"),
+            address=Web3.to_checksum_address("0x9d1075b41cd80ab08179f36bc17a7ff8708748ba"),
             abi=erc20_abi
         )
         
@@ -188,12 +188,12 @@ class CryptoQuestPipeline:
             
             if network == "polygon":
                 self.pool_contracts[address] = self.w3_polygon.eth.contract(
-                    address=Web3.toChecksumAddress(address),
+                    address=Web3.to_checksum_address(address),
                     abi=uniswap_v3_pool_abi
                 )
             elif network == "base":
                 self.pool_contracts[address] = self.w3_base.eth.contract(
-                    address=Web3.toChecksumAddress(address),
+                    address=Web3.to_checksum_address(address),
                     abi=uniswap_v3_pool_abi
                 )
     

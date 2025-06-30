@@ -175,38 +175,38 @@ class CrossChainManager:
         # Polygon contracts
         if self.contracts["polygon"]["cqt"]:
             self.polygon_contracts["cqt"] = self.w3_polygon.eth.contract(
-                address=Web3.toChecksumAddress(self.contracts["polygon"]["cqt"]),
+                address=Web3.to_checksum_address(self.contracts["polygon"]["cqt"]),
                 abi=erc20_abi
             )
         
         if self.contracts["polygon"]["agglayer_bridge"]:
             self.polygon_contracts["bridge"] = self.w3_polygon.eth.contract(
-                address=Web3.toChecksumAddress(self.contracts["polygon"]["agglayer_bridge"]),
+                address=Web3.to_checksum_address(self.contracts["polygon"]["agglayer_bridge"]),
                 abi=bridge_abi
             )
         
         if self.contracts["polygon"]["entry_point"]:
             self.polygon_contracts["entry_point"] = self.w3_polygon.eth.contract(
-                address=Web3.toChecksumAddress(self.contracts["polygon"]["entry_point"]),
+                address=Web3.to_checksum_address(self.contracts["polygon"]["entry_point"]),
                 abi=entry_point_abi
             )
         
         # Base contracts
         if self.contracts["base"]["cqt"]:
             self.base_contracts["cqt"] = self.w3_base.eth.contract(
-                address=Web3.toChecksumAddress(self.contracts["base"]["cqt"]),
+                address=Web3.to_checksum_address(self.contracts["base"]["cqt"]),
                 abi=erc20_abi
             )
         
         if self.contracts["base"]["agglayer_bridge"]:
             self.base_contracts["bridge"] = self.w3_base.eth.contract(
-                address=Web3.toChecksumAddress(self.contracts["base"]["agglayer_bridge"]),
+                address=Web3.to_checksum_address(self.contracts["base"]["agglayer_bridge"]),
                 abi=bridge_abi
             )
         
         if self.contracts["base"]["entry_point"]:
             self.base_contracts["entry_point"] = self.w3_base.eth.contract(
-                address=Web3.toChecksumAddress(self.contracts["base"]["entry_point"]),
+                address=Web3.to_checksum_address(self.contracts["base"]["entry_point"]),
                 abi=entry_point_abi
             )
     

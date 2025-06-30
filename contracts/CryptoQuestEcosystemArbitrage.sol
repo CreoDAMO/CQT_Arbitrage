@@ -44,6 +44,15 @@ contract CryptoQuestEcosystemArbitrage is ReentrancyGuard, Ownable {
     mapping(address => uint256) public liquidityDistributed;
     mapping(address => uint256) public lastArbitrageTime;
     
+    // Built-in Liquidity Provider (BLP) mappings
+    mapping(address => uint256) public liquidityReserve;
+    mapping(address => uint256) public totalLiquidityProvided;
+    mapping(address => uint256) public lastLiquidityInjection;
+    
+    // Mining/Staking integration
+    mapping(address => uint256) public minedFundsReceived;
+    mapping(address => bool) public authorizedMiners;
+    
     // Contract dependencies
     ZKProofVerifier public zkVerifier;
     DilithiumSignature public dilithium;
@@ -62,6 +71,13 @@ contract CryptoQuestEcosystemArbitrage is ReentrancyGuard, Ownable {
     event CrossChainArbitrage(address indexed source, address indexed target, uint256 amount);
     event EmergencyMigration(address indexed newContract, uint256 timestamp);
     event ZKProofVerified(bytes32 indexed proofHash, address indexed verifier);
+    
+    // BLP Events
+    event ProfitAllocated(address indexed sourcePool, address indexed targetPool, uint256 liquidityShare);
+    event LiquidityProvided(address indexed poolAddress, uint256 token0Amount, uint256 token1Amount);
+    event MinedFundsReceived(address indexed miner, uint256 amount, string network);
+    event LiquidityReserveUpdated(address indexed pool, uint256 newReserve);
+    event AutoLiquidityInjection(address indexed pool, uint256 cqtAmount, uint256 pairedAmount);
 
     constructor(
         address _zkVerifier,
@@ -300,6 +316,195 @@ contract CryptoQuestEcosystemArbitrage is ReentrancyGuard, Ownable {
         }
         
         emit EmergencyMigration(newContract, block.timestamp);
+    }
+
+    // ============== BUILT-IN LIQUIDITY PROVIDER (BLP) FUNCTIONS ==============
+
+    /**
+     * @dev Allocate arbitrage profits to liquidity reserves (20% allocation)
+     * @param sourcePool Source pool address  
+     * @param targetPool Target pool address
+     * @param profit Total arbitrage profit
+     */
+    function allocateArbitrageProfit(address sourcePool, address targetPool, uint256 profit) 
+        external 
+        onlyDeployer 
+    {
+        uint256 liquidityShare = (profit * 20) / 100; // 20% allocation
+        uint256 perPoolShare = liquidityShare / 2;
+        
+        liquidityReserve[sourcePool] += perPoolShare;
+        liquidityReserve[targetPool] += perPoolShare;
+        
+        emit ProfitAllocated(sourcePool, targetPool, liquidityShare);
+        emit LiquidityReserveUpdated(sourcePool, liquidityReserve[sourcePool]);
+        emit LiquidityReserveUpdated(targetPool, liquidityReserve[targetPool]);
+    }
+
+    /**
+     * @dev Automatically provide liquidity to a pool using reserves
+     * @param poolAddress Target pool address
+     */
+    function provideLiquidity(address poolAddress) external onlyDeployer nonReentrant {
+        uint256 reserve = liquidityReserve[poolAddress];
+        require(reserve > 1000e18, "Insufficient reserve"); // Minimum 1000 CQT
+
+        // Determine optimal allocation based on pool type
+        uint256 cqtAmount;
+        uint256 pairedAmount;
+        address pairedToken;
+
+        // Check pool type and calculate amounts
+        if (_isPolygonWETHPool(poolAddress)) {
+            // CQT/WETH pool: ~10.67 CQT per 1 WETH
+            pairedAmount = reserve / 11; // ~9% for WETH
+            cqtAmount = pairedAmount * 10670 / 1000; // 10.67 ratio
+            pairedToken = WETH_POLYGON;
+        } else if (_isPolygonWMATICPool(poolAddress)) {
+            // CQT/WMATIC pool: ~1.79 CQT per 1 WMATIC  
+            pairedAmount = reserve / 3; // ~33% for WMATIC
+            cqtAmount = (pairedAmount * 179) / 100; // 1.79 ratio
+            pairedToken = WMATIC;
+        } else if (_isBaseUSDCPool(poolAddress)) {
+            // CQT/USDC pool: assume 10 CQT per 1 USDC
+            pairedAmount = reserve / 11; // ~9% for USDC
+            cqtAmount = pairedAmount * 10;
+            pairedToken = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913; // USDC on Base
+        } else {
+            revert("Unsupported pool type");
+        }
+
+        // Transfer tokens to pool
+        IERC20 cqt = IERC20(_getCQTAddress(poolAddress));
+        IERC20 paired = IERC20(pairedToken);
+
+        require(cqt.balanceOf(address(this)) >= cqtAmount, "Insufficient CQT balance");
+        require(paired.balanceOf(address(this)) >= pairedAmount, "Insufficient paired token balance");
+
+        cqt.transfer(poolAddress, cqtAmount);
+        paired.transfer(poolAddress, pairedAmount);
+
+        // Update state
+        liquidityReserve[poolAddress] -= reserve;
+        totalLiquidityProvided[poolAddress] += (cqtAmount + pairedAmount);
+        lastLiquidityInjection[poolAddress] = block.timestamp;
+
+        emit LiquidityProvided(poolAddress, cqtAmount, pairedAmount);
+        emit AutoLiquidityInjection(poolAddress, cqtAmount, pairedAmount);
+    }
+
+    /**
+     * @dev Receive mined funds from AI Miner system
+     * @param network Network name ("ethereum" or "polygon")
+     */
+    function receiveMinedFunds(string memory network) external payable {
+        require(authorizedMiners[msg.sender] || msg.sender == owner(), "Unauthorized miner");
+        require(msg.value > 0, "No funds sent");
+
+        minedFundsReceived[msg.sender] += msg.value;
+        
+        // Convert mined funds to reserve (simplified - in production, swap for CQT)
+        uint256 reserveIncrease = msg.value; // Direct allocation for now
+        
+        // Distribute to active pools
+        if (poolAddresses.length > 0) {
+            uint256 perPoolIncrease = reserveIncrease / poolAddresses.length;
+            for (uint i = 0; i < poolAddresses.length; i++) {
+                liquidityReserve[poolAddresses[i]] += perPoolIncrease;
+            }
+        }
+
+        emit MinedFundsReceived(msg.sender, msg.value, network);
+    }
+
+    /**
+     * @dev Authorize a miner address
+     * @param miner Miner address to authorize
+     */
+    function authorizeMiner(address miner) external onlyDeployer {
+        require(miner != address(0), "Invalid miner address");
+        authorizedMiners[miner] = true;
+    }
+
+    /**
+     * @dev Check if pool needs liquidity injection
+     * @param poolAddress Pool to check
+     * @return needsLiquidity True if pool needs liquidity
+     */
+    function checkLiquidityNeeds(address poolAddress) external view returns (bool needsLiquidity) {
+        uint256 reserve = liquidityReserve[poolAddress];
+        uint256 timeSinceLastInjection = block.timestamp - lastLiquidityInjection[poolAddress];
+        
+        // Need liquidity if:
+        // 1. Reserve > 10,000 CQT AND
+        // 2. At least 1 hour since last injection
+        needsLiquidity = (reserve > 10000e18) && (timeSinceLastInjection > 3600);
+    }
+
+    // ============== HELPER FUNCTIONS ==============
+
+    function _isPolygonWETHPool(address poolAddress) internal view returns (bool) {
+        // Check if this is the CQT/WETH pool on Polygon
+        return poolAddresses.length > 0 && poolAddress == poolAddresses[0];
+    }
+
+    function _isPolygonWMATICPool(address poolAddress) internal view returns (bool) {
+        // Check if this is the CQT/WMATIC pool on Polygon  
+        return poolAddresses.length > 1 && poolAddress == poolAddresses[1];
+    }
+
+    function _isBaseUSDCPool(address poolAddress) internal view returns (bool) {
+        // Check if this is a Base USDC pool
+        for (uint i = 0; i < basePoolAddresses.length; i++) {
+            if (basePoolAddresses[i] == poolAddress) return true;
+        }
+        return false;
+    }
+
+    function _getCQTAddress(address poolAddress) internal view returns (address) {
+        // Return appropriate CQT address based on pool network
+        if (_isPolygonWETHPool(poolAddress) || _isPolygonWMATICPool(poolAddress)) {
+            return CQT_POLYGON;
+        }
+        return CQT_BASE;
+    }
+
+    // ============== VIEW FUNCTIONS ==============
+
+    /**
+     * @dev Get liquidity reserve status for all pools
+     */
+    function getLiquidityReserveStatus() external view returns (
+        address[] memory pools,
+        uint256[] memory reserves,
+        uint256[] memory lastInjections,
+        bool[] memory needsLiquidity
+    ) {
+        uint256 totalPools = poolAddresses.length + basePoolAddresses.length;
+        pools = new address[](totalPools);
+        reserves = new uint256[](totalPools);
+        lastInjections = new uint256[](totalPools);
+        needsLiquidity = new bool[](totalPools);
+
+        uint256 index = 0;
+        
+        // Polygon pools
+        for (uint i = 0; i < poolAddresses.length; i++) {
+            pools[index] = poolAddresses[i];
+            reserves[index] = liquidityReserve[poolAddresses[i]];
+            lastInjections[index] = lastLiquidityInjection[poolAddresses[i]];
+            needsLiquidity[index] = this.checkLiquidityNeeds(poolAddresses[i]);
+            index++;
+        }
+
+        // Base pools
+        for (uint i = 0; i < basePoolAddresses.length; i++) {
+            pools[index] = basePoolAddresses[i];
+            reserves[index] = liquidityReserve[basePoolAddresses[i]];
+            lastInjections[index] = lastLiquidityInjection[basePoolAddresses[i]];
+            needsLiquidity[index] = this.checkLiquidityNeeds(basePoolAddresses[i]);
+            index++;
+        }
     }
 
     /**
