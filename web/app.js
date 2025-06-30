@@ -2,6 +2,7 @@
  * CryptoQuest Arbitrage Dashboard
  * Real-time monitoring and control interface for the arbitrage bot
  */
+import DOMPurify from 'dompurify';
 
 class ArbitrageDashboard {
     constructor() {
@@ -659,11 +660,12 @@ class ArbitrageDashboard {
         toast.className = `toast align-items-center text-bg-${type} border-0`;
         toast.setAttribute('role', 'alert');
         
+        const sanitizedMessage = DOMPurify.sanitize(message);
         toast.innerHTML = `
             <div class="d-flex">
                 <div class="toast-body">
                     <i class="fas fa-${this.getNotificationIcon(type)} me-2"></i>
-                    ${message}
+                    ${sanitizedMessage}
                 </div>
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
             </div>
