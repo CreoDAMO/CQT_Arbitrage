@@ -5,7 +5,7 @@ channel = "stable-24_05"
 packages = ["glibcLocales"]
 
 [workflows]
-runButton = "Project"
+runButton = "CQT Web Dashboard"
 
 [[workflows.workflow]]
 name = "Project"
@@ -62,6 +62,15 @@ author = "agent"
 task = "shell.exec"
 args = "cd web && python simple_server.py"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "CQT Web Dashboard"
+author = 44463815
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd web && python simple_server.py"
 
 [[ports]]
 localPort = 5000
