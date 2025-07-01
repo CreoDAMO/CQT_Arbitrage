@@ -12,6 +12,7 @@ import {
   ValidationError,
   AppConfig 
 } from '../src/types';
+import DOMPurify from 'dompurify';
 
 class CryptoQuestDashboard {
   private state: DashboardState;
@@ -516,7 +517,7 @@ class CryptoQuestDashboard {
     const alert = document.createElement('div');
     alert.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
     alert.innerHTML = `
-      ${message}
+      ${DOMPurify.sanitize(message)}
       <button type="button" class="btn-close" onclick="this.parentElement.remove()" aria-label="Close"></button>
     `;
 
