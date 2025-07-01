@@ -58,15 +58,43 @@ body {
 /* Sidebar Styles */
 .sidebar {
     position: fixed;
-    top: var(--navbar-height);
+    top: 60px;
     left: 0;
-    width: var(--sidebar-width);
-    height: calc(100vh - var(--navbar-height));
-    background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
-    box-shadow: var(--shadow-medium);
-    transition: var(--transition);
-    z-index: 1020;
+    width: 250px;
+    height: calc(100vh - 60px);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-right: 3px solid #3498db;
     overflow-y: auto;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+}
+
+@media (max-width: 1200px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+    }
+}
+
+.sidebar-toggle {
+    background: #3498db;
+    border: none;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.sidebar-overlay {
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 .sidebar-header {
@@ -453,11 +481,11 @@ body {
         margin-left: 0;
         padding: 1rem;
     }
-    
+
     .sidebar {
         transform: translateX(-100%);
     }
-    
+
     .sidebar.show {
         transform: translateX(0);
     }
@@ -467,30 +495,30 @@ body {
     :root {
         --sidebar-width: 280px;
     }
-    
+
     .metric-value {
         font-size: 2rem;
     }
-    
+
     .metric-icon {
         font-size: 2rem;
     }
-    
+
     .section-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
     }
-    
+
     .section-actions {
         width: 100%;
         justify-content: flex-end;
     }
-    
+
     .card {
         margin-bottom: 1rem;
     }
-    
+
     .main-content {
         padding: 1rem 0.5rem;
     }
@@ -502,22 +530,22 @@ body {
         --light-color: #2c3e50;
         --dark-color: #ecf0f1;
     }
-    
+
     body {
         background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
         color: var(--dark-color);
     }
-    
+
     .card {
         background: rgba(44, 62, 80, 0.9);
         color: var(--dark-color);
     }
-    
+
     .table {
         background: rgba(44, 62, 80, 0.9);
         color: var(--dark-color);
     }
-    
+
     .table tbody tr:hover {
         background-color: rgba(102, 126, 234, 0.1);
     }
@@ -654,7 +682,7 @@ body {
         z-index: 1010;
         display: none;
     }
-    
+
     .sidebar-overlay.show {
         display: block;
     }
@@ -798,24 +826,24 @@ body {
     .metric-card {
         padding: 1.5rem 1rem;
     }
-    
+
     .metric-value {
         font-size: 2rem;
     }
-    
+
     .metric-icon {
         font-size: 2rem;
         margin-bottom: 0.75rem;
     }
-    
+
     .card-body {
         padding: 1rem;
     }
-    
+
     .table-responsive {
         font-size: 0.875rem;
     }
-    
+
     .btn-sm {
         padding: 0.25rem 0.5rem;
         font-size: 0.75rem;
@@ -903,12 +931,12 @@ body {
     .sidebar, .navbar, .section-actions, .btn {
         display: none !important;
     }
-    
+
     .main-content {
         margin: 0 !important;
         padding: 0 !important;
     }
-    
+
     .card {
         break-inside: avoid;
         box-shadow: none !important;
