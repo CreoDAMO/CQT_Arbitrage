@@ -13,8 +13,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@types/node": "^24.0.10",
-    "dompurify": "^3.2.6",
-    "typescript": "^5.8.3"
+    "dompurify": "^3.2.6"
   }
 }
