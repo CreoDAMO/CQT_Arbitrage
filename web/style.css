@@ -120,6 +120,10 @@ body {
     text-decoration: none;
     transition: var(--transition);
     border-left: 3px solid transparent;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    z-index: 10;
 }
 
 .sidebar-nav .nav-link:hover {
@@ -163,10 +167,13 @@ body {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 20px;
     animation: fadeIn 0.3s ease-in-out;
+    pointer-events: auto;
 }
 
 .section.active {
-    display: block;
+    display: block !important;
+    opacity: 1;
+    visibility: visible;
 }
 
 @keyframes fadeIn {
