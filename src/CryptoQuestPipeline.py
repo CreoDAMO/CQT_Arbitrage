@@ -28,6 +28,15 @@ except ImportError:
 from CrossChainManager import CrossChainManager
 from AgentKitIntegration import AgentKitClient
 
+# Import database components
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    from database_schema import DatabaseManager, ArbitrageOpportunity as DBOpportunity, ArbitrageExecution, SystemMetrics
+    DATABASE_AVAILABLE = True
+except ImportError:
+    DATABASE_AVAILABLE = False
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -81,6 +90,18 @@ class CryptoQuestPipeline:
             os.getenv("BASE_RPC_URL", "https://mainnet.base.org")
         ))
         
+        # Initialize Database
+        self.db_manager = None
+        if DATABASE_AVAILABLE:
+            try:
+                self.db_manager = DatabaseManager()
+                self.db_manager.connect()
+                self.db_manager.create_tables()
+                logger.info("Database connected and initialized successfully")
+            except Exception as e:
+                logger.warning(f"Database initialization failed: {e}")
+                self.db_manager = None
+
         # Initialize Redis for caching (optional in demo mode)
         try:
             self.redis_client = redis.Redis(
