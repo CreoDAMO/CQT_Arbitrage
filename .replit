@@ -60,14 +60,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = """
-python -c \"
-import sys, os
-sys.path.insert(0, 'web')
-sys.path.insert(0, 'src')
-os.chdir('web')
-exec(open('server.py').read())
-\""""
+args = "cd web && python simple_server.py"
 waitForPort = 5000
 
 [[ports]]
