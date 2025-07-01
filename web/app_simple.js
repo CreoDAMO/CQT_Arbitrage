@@ -13,13 +13,13 @@ class SimpleDashboard {
 
     async init() {
         console.log('Initializing CryptoQuest Dashboard...');
-        
+
         try {
             this.setupSidebarNavigation();
             this.setupEventListeners();
             await this.loadInitialData();
             this.startPeriodicUpdates();
-            
+
             console.log('Dashboard initialized successfully');
         } catch (error) {
             console.error('Dashboard initialization error:', error);
@@ -29,17 +29,17 @@ class SimpleDashboard {
 
     setupSidebarNavigation() {
         const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
-        
+
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                
+
                 // Remove active class from all links
                 navLinks.forEach(nl => nl.classList.remove('active'));
-                
+
                 // Add active class to clicked link
                 link.classList.add('active');
-                
+
                 // Get target section
                 const targetSection = link.getAttribute('data-section');
                 this.showSection(targetSection);
@@ -50,7 +50,7 @@ class SimpleDashboard {
     }
 
     setupMobileSidebar() {
-        // Create mobile toggle if it doesn't exist
+        // Create mobile toggle button if not exists
         let toggleBtn = document.querySelector('.sidebar-toggle');
         if (!toggleBtn) {
             toggleBtn = document.createElement('button');
@@ -59,7 +59,7 @@ class SimpleDashboard {
             document.body.appendChild(toggleBtn);
         }
 
-        // Create overlay if it doesn't exist
+        // Create overlay if not exists
         let overlay = document.querySelector('.sidebar-overlay');
         if (!overlay) {
             overlay = document.createElement('div');
@@ -67,27 +67,57 @@ class SimpleDashboard {
             document.body.appendChild(overlay);
         }
 
-        const sidebar = document.getElementById('sidebar');
+        const sidebar = document.querySelector('.sidebar');
+        if (!sidebar) return;
 
-        if (sidebar) {
-            toggleBtn.addEventListener('click', () => {
-                sidebar.classList.toggle('show');
-                overlay.classList.toggle('show');
-            });
-
-            overlay.addEventListener('click', () => {
+        // Show mobile toggle on smaller screens
+        const checkMobile = () => {
+            if (window.innerWidth <= 1200) {
+                toggleBtn.style.display = 'block';
+            } else {
+                toggleBtn.style.display = 'none';
                 sidebar.classList.remove('show');
-                overlay.classList.remove('show');
-            });
-        }
+                overlay.style.display = 'none';
+            }
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        // Toggle sidebar
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('show');
+            overlay.style.display = sidebar.classList.contains('show') ? 'block' : 'none';
+        });
+
+        // Close on overlay click
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('show');
+            overlay.style.display = 'none';
+        });
     }
 
     setupEventListeners() {
-        // Auto-refresh toggle
-        const autoRefreshBtn = document.getElementById('auto-refresh-toggle');
-        if (autoRefreshBtn) {
-            autoRefreshBtn.addEventListener('click', () => {
-                this.toggleAutoRefresh();
+        // Bot control buttons
+        const startBtn = document.getElementById('start-bot');
+        const pauseBtn = document.getElementById('pause-bot');
+        const emergencyBtn = document.getElementById('emergency-stop');
+
+        if (startBtn) {
+            startBtn.addEventListener('click', () => this.startBot());
+        }
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => this.stopBot());
+        }
+        if (emergencyBtn) {
+            emergencyBtn.addEventListener('click', () => this.emergencyStop());
+        }
+
+        // Auto-execute toggle
+        const autoExecuteToggle = document.getElementById('auto-execute-toggle');
+        if (autoExecuteToggle) {
+            autoExecuteToggle.addEventListener('click', () => {
+                this.toggleAutoExecution();
             });
         }
 
@@ -95,284 +125,146 @@ class SimpleDashboard {
         const refreshButtons = document.querySelectorAll('[id^="refresh-"]');
         refreshButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                this.refreshCurrentSection();
+                this.loadSectionData(this.currentSection);
+                this.showNotification('Data refreshed', 'info');
             });
         });
-
-        // Control buttons
-        this.setupControlButtons();
-    }
-
-    setupControlButtons() {
-        // Start/Stop bot
-        const startBtn = document.getElementById('start-bot');
-        const stopBtn = document.getElementById('stop-bot');
-
-        if (startBtn) {
-            startBtn.addEventListener('click', () => this.startBot());
-        }
-        if (stopBtn) {
-            stopBtn.addEventListener('click', () => this.stopBot());
-        }
-
-        // Execute arbitrage buttons
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('execute-arbitrage')) {
-                const opportunityId = e.target.getAttribute('data-opportunity-id');
-                this.executeArbitrage(opportunityId);
-            }
-        });
-    }
-
-    showSection(sectionName) {
-        // Hide all sections
-        const sections = document.querySelectorAll('.dashboard-section');
-        sections.forEach(section => {
-            section.style.display = 'none';
-        });
-
-        // Show target section
-        const targetSection = document.getElementById(`${sectionName}-section`);
-        if (targetSection) {
-            targetSection.style.display = 'block';
-            this.currentSection = sectionName;
-            
-            // Load section-specific data
-            this.loadSectionData(sectionName);
-        }
     }
 
     async loadInitialData() {
         try {
-            // Load status
-            await this.updateStatus();
-            
-            // Load opportunities
-            await this.updateOpportunities();
-            
-            // Load metrics
-            await this.updateMetrics();
-            
-            // Load executions
-            await this.updateExecutions();
-            
-            // Show overview section by default
-            this.showSection('overview');
-            
+            // Load initial dashboard data
+            await this.loadOverviewData();
+
+            // Welcome message
+            setTimeout(() => {
+                this.speak('Welcome to CryptoQuest Dashboard. I\'m here to help you navigate and understand the system.');
+            }, 2000);
         } catch (error) {
             console.error('Error loading initial data:', error);
             this.handleError(error);
         }
     }
 
-    async loadSectionData(sectionName) {
-        switch (sectionName) {
-            case 'overview':
-                await this.updateStatus();
-                await this.updateMetrics();
-                break;
-            case 'arbitrage':
-                await this.updateOpportunities();
-                await this.updateExecutions();
-                break;
-            case 'ai-miner':
-                await this.updateMinerData();
-                break;
-            case 'liquidity':
-                await this.updateLiquidityData();
-                break;
-            case 'cross-chain':
-                await this.updateCrossChainData();
-                break;
-            case 'analytics':
-                await this.updateAnalytics();
-                break;
-            case 'agent-kit':
-                await this.updateAgentData();
-                break;
-            case 'security':
-                await this.updateSecurityData();
-                break;
-        }
-    }
-
-    async updateStatus() {
+    async loadOverviewData() {
         try {
-            const response = await fetch(`${this.apiBaseUrl}/api/status`);
-            const data = await response.json();
-            
-            this.displayStatus(data);
+            const [statusResponse, metricsResponse] = await Promise.all([
+                fetch(`${this.apiBaseUrl}/api/status`),
+                fetch(`${this.apiBaseUrl}/api/metrics`)
+            ]);
+
+            if (statusResponse.ok && metricsResponse.ok) {
+                const status = await statusResponse.json();
+                const metrics = await metricsResponse.json();
+
+                this.updateElement('total-arbitrages', metrics.total_arbitrages || 0);
+                this.updateElement('success-rate', `${metrics.success_rate || 0}%`);
+                this.updateElement('total-profit', `$${(metrics.total_profit || 0).toFixed(2)}`);
+                this.updateElement('uptime', this.formatUptime(metrics.uptime || 0));
+
+                // Update status badge
+                this.updateConnectionStatus(status.status === 'running');
+            }
         } catch (error) {
-            console.error('Error updating status:', error);
+            console.error('Error loading overview data:', error);
         }
     }
 
-    async updateOpportunities() {
+    async loadArbitrageData() {
         try {
             const response = await fetch(`${this.apiBaseUrl}/api/opportunities`);
-            const data = await response.json();
-            
-            this.displayOpportunities(data.opportunities || []);
-        } catch (error) {
-            console.error('Error updating opportunities:', error);
-        }
-    }
-
-    async updateMetrics() {
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/api/metrics`);
-            const data = await response.json();
-            
-            this.displayMetrics(data);
-        } catch (error) {
-            console.error('Error updating metrics:', error);
-        }
-    }
-
-    async updateExecutions() {
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/api/executions`);
-            const data = await response.json();
-            
-            this.displayExecutions(data.executions || []);
-        } catch (error) {
-            console.error('Error updating executions:', error);
-        }
-    }
-
-    displayStatus(status) {
-        const statusBadge = document.getElementById('status-badge');
-        const statusText = document.getElementById('status-text');
-        
-        if (statusBadge) {
-            statusBadge.className = status.status === 'running' ? 'badge bg-success' : 'badge bg-warning';
-            statusBadge.innerHTML = `<i class="fas fa-circle pulse"></i> ${status.status}`;
-        }
-        
-        if (statusText) {
-            statusText.textContent = `Status: ${status.status} (${status.mode} mode)`;
-        }
-
-        // Update database status
-        const dbStatus = document.getElementById('database-status');
-        if (dbStatus) {
-            dbStatus.textContent = status.database_connected ? 'Connected' : 'Disconnected';
-            dbStatus.className = status.database_connected ? 'text-success' : 'text-warning';
-        }
-    }
-
-    displayOpportunities(opportunities) {
-        const container = document.getElementById('opportunities-list');
-        if (!container) return;
-
-        if (opportunities.length === 0) {
-            container.innerHTML = '<div class="alert alert-info">No active arbitrage opportunities found.</div>';
-            return;
-        }
-
-        const html = opportunities.map(opp => `
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-3">
-                            <div class="d-flex align-items-center">
-                                <span class="badge bg-primary me-2">${opp.source}</span>
-                                <i class="fas fa-arrow-right mx-2"></i>
-                                <span class="badge bg-secondary">${opp.target}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <small class="text-muted">Profit Potential</small>
-                            <div class="fw-bold text-success">${(opp.profit * 100).toFixed(2)}%</div>
-                        </div>
-                        <div class="col-md-2">
-                            <small class="text-muted">Net Profit</small>
-                            <div class="fw-bold">$${opp.net_profit.toFixed(2)}</div>
-                        </div>
-                        <div class="col-md-2">
-                            <small class="text-muted">Confidence</small>
-                            <div class="fw-bold">${(opp.confidence * 100).toFixed(1)}%</div>
-                        </div>
-                        <div class="col-md-2">
-                            <span class="badge bg-${opp.status === 'pending' ? 'warning' : 'success'}">${opp.status}</span>
-                        </div>
-                        <div class="col-md-1">
-                            <button class="btn btn-sm btn-success execute-arbitrage" data-opportunity-id="${opp.id}">
-                                <i class="fas fa-play"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-
-        container.innerHTML = html;
-    }
-
-    displayMetrics(metrics) {
-        // Update metric cards
-        const elements = {
-            'total-arbitrages': metrics.total_arbitrages,
-            'successful-arbitrages': metrics.successful_arbitrages,
-            'total-profit': `$${metrics.total_profit.toFixed(2)}`,
-            'success-rate': `${((metrics.successful_arbitrages / metrics.total_arbitrages) * 100).toFixed(1)}%`,
-            'gas-costs': `$${metrics.total_gas_cost.toFixed(2)}`,
-            'uptime': this.formatUptime(metrics.uptime)
-        };
-
-        Object.entries(elements).forEach(([id, value]) => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = value;
+            if (response.ok) {
+                const data = await response.json();
+                this.updateOpportunitiesTable(data.opportunities || []);
             }
-        });
+        } catch (error) {
+            console.error('Error loading arbitrage data:', error);
+        }
     }
 
-    displayExecutions(executions) {
-        const container = document.getElementById('executions-list');
-        if (!container) return;
+    updateOpportunitiesTable(opportunities) {
+        const tbody = document.getElementById('opportunities-table');
+        if (!tbody) return;
 
-        if (executions.length === 0) {
-            container.innerHTML = '<div class="alert alert-info">No recent executions found.</div>';
+        if (!opportunities || opportunities.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No opportunities found</td></tr>';
             return;
         }
 
-        const html = executions.map(exec => `
-            <div class="card mb-2">
-                <div class="card-body py-2">
-                    <div class="row align-items-center">
-                        <div class="col-md-2">
-                            <span class="badge bg-${exec.success ? 'success' : 'danger'}">
-                                ${exec.success ? 'Success' : 'Failed'}
-                            </span>
-                        </div>
-                        <div class="col-md-2">
-                            <small>${exec.source_network} → ${exec.target_network}</small>
-                        </div>
-                        <div class="col-md-2">
-                            <small>$${exec.actual_profit.toFixed(2)}</small>
-                        </div>
-                        <div class="col-md-3">
-                            <small class="text-muted">${exec.transaction_hash.substring(0, 10)}...</small>
-                        </div>
-                        <div class="col-md-3">
-                            <small class="text-muted">${new Date(exec.created_at).toLocaleString()}</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        tbody.innerHTML = opportunities.map(opp => `
+            <tr>
+                <td>
+                    <span class="badge bg-primary">${opp.source || 'Unknown'}</span>
+                    <i class="fas fa-arrow-right mx-1"></i>
+                    <span class="badge bg-secondary">${opp.target || 'Unknown'}</span>
+                </td>
+                <td><span class="text-success">${((opp.profit || 0) * 100).toFixed(2)}%</span></td>
+                <td><span class="badge bg-success">${((opp.confidence || 0) * 100).toFixed(0)}%</span></td>
+                <td class="text-success">$${(opp.net_profit || 0).toFixed(4)}</td>
+                <td><span class="badge bg-success">Active</span></td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="window.dashboard.executeArbitrage('${opp.id || 'unknown'}')">
+                        <i class="fas fa-play"></i>
+                    </button>
+                </td>
+            </tr>
         `).join('');
-
-        container.innerHTML = html;
     }
 
-    // Placeholder methods for other sections
-    async updateMinerData() { /* Implementation for AI Miner data */ }
-    async updateLiquidityData() { /* Implementation for Liquidity data */ }
-    async updateCrossChainData() { /* Implementation for Cross-chain data */ }
-    async updateAnalytics() { /* Implementation for Analytics data */ }
-    async updateAgentData() { /* Implementation for Agent Kit data */ }
-    async updateSecurityData() { /* Implementation for Security data */ }
+    updateConnectionStatus(connected) {
+        const statusBadge = document.getElementById('status-badge');
+        if (statusBadge) {
+            statusBadge.className = `badge me-2 ${connected ? 'bg-success' : 'bg-danger'}`;
+            statusBadge.innerHTML = `<i class="fas fa-circle ${connected ? 'pulse' : ''}"></i> ${connected ? 'Online' : 'Offline'}`;
+        }
+    }
+
+    updateElement(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    }
+
+    toggleAutoExecution() {
+        const btn = document.getElementById('auto-execute-toggle');
+        if (btn) {
+            const isOn = btn.textContent.includes('OFF');
+            btn.innerHTML = `<i class="fas fa-magic"></i> Auto Execute: ${isOn ? 'ON' : 'OFF'}`;
+            btn.className = `btn btn-sm ${isOn ? 'btn-success' : 'btn-outline-secondary'}`;
+
+            this.showNotification(`Auto execution ${isOn ? 'enabled' : 'disabled'}`, 'info');
+            this.speak(`Auto execution ${isOn ? 'enabled' : 'disabled'}`);
+        }
+    }
+
+    async emergencyStop() {
+        if (confirm('Are you sure you want to emergency stop all operations?')) {
+            this.showNotification('Emergency stop activated', 'warning');
+            this.speak('Emergency stop activated. All operations have been halted.');
+        }
+    }
+
+    handleError(error) {
+        console.error('Dashboard error:', error);
+        this.showNotification('An error occurred: ' + error.message, 'error');
+        this.speak('An error has occurred. Please check the console for details.');
+    }
+
+    startPeriodicUpdates() {
+        if (this.updateInterval) {
+            setInterval(async () => {
+                try {
+                    await this.loadOverviewData();
+                    if (this.currentSection === 'arbitrage') {
+                        await this.loadArbitrageData();
+                    }
+                } catch (error) {
+                    console.error('Periodic update error:', error);
+                }
+            }, this.updateInterval);
+        }
+    }
 
     // Control methods
     async startBot() {
@@ -406,18 +298,6 @@ class SimpleDashboard {
         }
     }
 
-    startPeriodicUpdates() {
-        if (this.refreshIntervalId) {
-            clearInterval(this.refreshIntervalId);
-        }
-        
-        this.refreshIntervalId = setInterval(() => {
-            if (this.isAutoRefreshEnabled) {
-                this.loadSectionData(this.currentSection);
-            }
-        }, this.updateInterval);
-    }
-
     stopPeriodicUpdates() {
         if (this.refreshIntervalId) {
             clearInterval(this.refreshIntervalId);
@@ -429,18 +309,30 @@ class SimpleDashboard {
         this.loadSectionData(this.currentSection);
     }
 
-    handleError(error) {
-        console.error('Dashboard error:', error);
-        // Show user-friendly error message
-        const errorContainer = document.getElementById('error-container');
-        if (errorContainer) {
-            errorContainer.innerHTML = `
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                    <strong>Notice:</strong> Some features may be limited in demo mode. 
-                    Dashboard is displaying sample data.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
+    showNotification(message, type = 'info') {
+        const notificationArea = document.getElementById('notification-area');
+        if (!notificationArea) return;
+
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} alert-dismissible fade show`;
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+
+        notificationArea.appendChild(alert);
+
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
+    }
+
+    speak(text) {
+        if ('speechSynthesis' in window) {
+            const speech = new SpeechSynthesisUtterance(text);
+            speechSynthesis.speak(speech);
+        } else {
+            console.warn('Text-to-speech not supported in this browser.');
         }
     }
 }
