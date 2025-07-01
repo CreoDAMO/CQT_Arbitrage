@@ -285,7 +285,7 @@ class CryptoQuestDashboard {
     const container = document.getElementById('arbitrage-opportunities');
     if (!container) return;
 
-    container.innerHTML = this.state.opportunities.map(opp => `
+    const sanitizedHTML = DOMPurify.sanitize(this.state.opportunities.map(opp => `
       <div class="opportunity-card" data-id="${opp.id}">
         <div class="opportunity-header">
           <span class="network-badge ${opp.sourcePool.network}">${opp.sourcePool.network.toUpperCase()}</span>
@@ -307,7 +307,8 @@ class CryptoQuestDashboard {
           Execute
         </button>
       </div>
-    `).join('');
+    `).join(''));
+    container.innerHTML = sanitizedHTML;
   }
 
   private getConfidenceClass(confidence: number): string {
