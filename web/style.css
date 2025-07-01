@@ -154,122 +154,14 @@ body {
     transition: var(--transition);
 }
 
-/* Main content sections */
+/* Section Styles */
 .section {
     display: none;
-    padding: 20px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
-    animation: fadeIn 0.3s ease-in-out;
+    animation: fadeIn 0.5s ease-in;
 }
 
 .section.active {
     display: block;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Sidebar active states */
-.sidebar-nav .nav-link.active {
-    background-color: #007bff;
-    color: white;
-    border-radius: 8px;
-}
-
-.sidebar-nav .nav-link:hover {
-    background-color: rgba(255,255,255,0.1);
-    border-radius: 8px;
-}
-
-/* Mobile sidebar improvements */
-.sidebar-toggle {
-    position: fixed;
-    top: 70px;
-    left: 10px;
-    z-index: 1001;
-    display: none;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    box-shadow: 0 4px 12px rgba(0,123,255,0.3);
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.sidebar-toggle:hover {
-    background: #0056b3;
-    transform: scale(1.1);
-}
-
-.sidebar-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 999;
-    display: none;
-}
-
-@media (max-width: 1200px) {
-    .sidebar-toggle {
-        display: block !important;
-    }
-
-    .sidebar {
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
-    }
-
-    .sidebar.show {
-        transform: translateX(0);
-    }
-}
-
-/* Notification improvements */
-#notification-area .alert {
-    margin-bottom: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-/* Button hover effects */
-.btn {
-    transition: all 0.2s ease;
-}
-
-.btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-/* Card hover effects */
-.card {
-    transition: all 0.2s ease;
-}
-
-.card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-}
-
-/* Pulse animation for status indicator */
-.pulse {
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
 }
 
 .section-header {
@@ -944,7 +836,7 @@ body {
         right: 20px;
         left: 20px;
     }
-
+    
     .chat-toggle {
         bottom: 10px;
         right: 20px;
