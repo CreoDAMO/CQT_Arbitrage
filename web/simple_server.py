@@ -60,6 +60,9 @@ async def get_css():
 async def get_js():
     """Serve JavaScript file"""
     js_path = os.path.join(current_dir, "app_simple.js")
+    if not os.path.exists(js_path):
+        # Fallback to app.js if app_simple.js doesn't exist
+        js_path = os.path.join(current_dir, "app.js")
     return FileResponse(js_path, media_type="application/javascript")
 
 @app.get("/api/status")
