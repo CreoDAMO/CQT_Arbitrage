@@ -2,6 +2,7 @@
  * Enhanced CryptoQuest Arbitrage Dashboard with Sidebar Navigation
  * Real-time monitoring and control interface for the arbitrage bot
  */
+import DOMPurify from 'dompurify';
 
 class EnhancedArbitrageDashboard {
     constructor() {
@@ -742,9 +743,10 @@ class EnhancedArbitrageDashboard {
         const toast = document.createElement('div');
         toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type} border-0`;
         toast.setAttribute('role', 'alert');
+        const sanitizedMessage = DOMPurify.sanitize(message);
         toast.innerHTML = `
             <div class="d-flex">
-                <div class="toast-body">${message}</div>
+                <div class="toast-body">${sanitizedMessage}</div>
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
             </div>
         `;
