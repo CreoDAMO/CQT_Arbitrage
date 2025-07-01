@@ -70,6 +70,9 @@ class CryptoQuestPipeline:
         with open(config_path, 'r') as f:
             self.config = json.load(f)
         
+        # Check if running in demo mode
+        self.demo_mode = not self.config.get("arbitrage", {}).get("enabled", True)
+        
         # Initialize network connections
         self.w3_polygon = Web3(Web3.HTTPProvider(
             os.getenv("POLYGON_RPC_URL", "https://polygon-rpc.com")
@@ -78,21 +81,34 @@ class CryptoQuestPipeline:
             os.getenv("BASE_RPC_URL", "https://mainnet.base.org")
         ))
         
-        # Initialize Redis for caching
-        self.redis_client = redis.Redis(
-            host=os.getenv("REDIS_HOST", "localhost"),
-            port=int(os.getenv("REDIS_PORT", "6379")),
-            db=0,
-            decode_responses=True
-        )
+        # Initialize Redis for caching (optional in demo mode)
+        try:
+            self.redis_client = redis.Redis(
+                host=os.getenv("REDIS_HOST", "localhost"),
+                port=int(os.getenv("REDIS_PORT", "6379")),
+                db=0,
+                decode_responses=True
+            )
+            # Test connection
+            self.redis_client.ping()
+        except Exception as e:
+            if not self.demo_mode:
+                logger.warning(f"Redis connection failed: {e}")
+            self.redis_client = None
         
         # Initialize components
         self.ml_predictor = LSTMPredictor()
-        self.cross_chain_manager = CrossChainManager(self.w3_polygon, self.w3_base)
-        self.agent_client = AgentKitClient(
-            api_key=os.getenv("CDP_API_KEY"),
-            project_id=os.getenv("CDP_PROJECT_ID", "eb262ee5-9b74-4fa6-8891-0ae680cfea10")
-        )
+        self.cross_chain_manager = CrossChainManager(self.w3_polygon, self.w3_base, self.demo_mode)
+        
+        # Initialize Agent Kit (optional)
+        cdp_api_key = os.getenv("CDP_API_KEY")
+        if cdp_api_key and not self.demo_mode:
+            self.agent_client = AgentKitClient(
+                api_key=cdp_api_key,
+                project_id=os.getenv("CDP_PROJECT_ID", "eb262ee5-9b74-4fa6-8891-0ae680cfea10")
+            )
+        else:
+            self.agent_client = None
         
         # Load contract ABIs and addresses
         self._load_contracts()
@@ -102,9 +118,12 @@ class CryptoQuestPipeline:
         if private_key:
             self.account = Account.from_key(private_key)
             logger.info(f"Initialized with account: {self.account.address}")
-        else:
+        elif not self.demo_mode:
             logger.error("PRIVATE_KEY not found in environment variables")
             raise ValueError("Private key required for operation")
+        else:
+            self.account = None
+            logger.info("Running in demo mode - no private key required")
         
         # Pool tracking
         self.pools = {}

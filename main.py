@@ -175,7 +175,9 @@ class CryptoQuestArbitrageBot:
                 
                 w3_polygon = Web3(Web3.HTTPProvider(polygon_rpc))
                 w3_base = Web3(Web3.HTTPProvider(base_rpc))
-                self.cross_chain_manager = CrossChainManager(w3_polygon, w3_base)
+                # Pass demo mode flag based on arbitrage being disabled
+                demo_mode = not self.config.get("arbitrage", {}).get("enabled", True)
+                self.cross_chain_manager = CrossChainManager(w3_polygon, w3_base, demo_mode)
                 logger.info("Cross-Chain Manager initialized successfully")
             except Exception as e:
                 logger.warning(f"Cross-Chain Manager initialization failed: {e}")
@@ -217,6 +219,11 @@ class CryptoQuestArbitrageBot:
     
     def _verify_environment(self):
         """Verify required environment variables"""
+        
+        # Check if running in demo/web-only mode
+        if not self.config.get("arbitrage", {}).get("enabled", True):
+            logger.info("Running in demo mode - skipping private key verification")
+            return
         
         required_vars = [
             "PRIVATE_KEY",

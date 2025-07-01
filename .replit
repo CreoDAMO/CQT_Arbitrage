@@ -20,6 +20,14 @@ args = "CQT Arbitrage Bot"
 task = "workflow.run"
 args = "CQT Test"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "CQT Demo"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Simple Web Server"
+
 [[workflows.workflow]]
 name = "CQT Arbitrage Bot"
 author = "agent"
@@ -36,6 +44,31 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py --test-only"
+
+[[workflows.workflow]]
+name = "CQT Demo"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py --web-only"
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Simple Web Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = """
+python -c \"
+import sys, os
+sys.path.insert(0, 'web')
+sys.path.insert(0, 'src')
+os.chdir('web')
+exec(open('server.py').read())
+\""""
+waitForPort = 5000
 
 [[ports]]
 localPort = 5000

@@ -47,18 +47,22 @@ class UserOperation:
 class CrossChainManager:
     """Manages cross-chain arbitrage operations between Polygon and Base"""
     
-    def __init__(self, w3_polygon: Web3, w3_base: Web3):
+    def __init__(self, w3_polygon: Web3, w3_base: Web3, demo_mode: bool = False):
         """Initialize cross-chain manager"""
         
         self.w3_polygon = w3_polygon
         self.w3_base = w3_base
+        self.demo_mode = demo_mode
         
         # Load account
         private_key = os.getenv("PRIVATE_KEY")
         if private_key:
             self.account = Account.from_key(private_key)
-        else:
+        elif not demo_mode:
             raise ValueError("Private key required for cross-chain operations")
+        else:
+            # Create a dummy account for demo mode
+            self.account = None
         
         # Contract addresses
         self.contracts = {
